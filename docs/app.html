@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QuotaTrace in your browser: where did my Codex / Claude Code quota go?</title>
+<meta name="description" content="Pick your .codex/sessions or .claude/projects folder. QuotaTrace analyses it inside your browser, nothing is uploaded, and shows quota points per 1M tokens, out-of-line quota jumps and where your tokens went.">
+<style>
+:root{--fg:#111;--mut:#555;--bg:#fafaf7;--acc:#0b6e4f;--card:#fff;--bd:#e3e3dc}
+*{box-sizing:border-box}body{margin:0;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--fg);background:var(--bg)}
+main{max-width:980px;margin:0 auto;padding:36px 20px 80px}h1{font-size:1.9rem;line-height:1.2;margin:.2em 0}
+code,pre{font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}code{background:#eee;padding:1px 4px;border-radius:4px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px 20px;margin:16px 0}
+.row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+label.btn,button{display:inline-block;background:var(--acc);color:#fff;border:0;padding:11px 18px;border-radius:8px;font-weight:600;cursor:pointer;font-size:15px}
+button.sec{background:#fff;color:var(--acc);border:1px solid var(--acc)}
+input[type=file]{display:none}select{padding:8px;border-radius:6px;font-size:15px}
+#out table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0 16px}#out td,#out th{border-bottom:1px solid var(--bd);padding:5px 7px;text-align:left}
+#out h1{font-size:1.5rem}#out h2{margin-top:1.6em;border-top:2px solid var(--bd);padding-top:.6em}#out h3{margin-top:1.3em}
+.small{font-size:.9rem;color:var(--mut)}#status{color:var(--mut)}a{color:var(--acc)}
+.cta{background:#eef7f2;border-color:#bfe0cf}
+</style>
+<script data-goatcounter="https://quotatrace.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+<body><main>
+<p class="small"><a href="./">QuotaTrace</a> · runs entirely in your browser</p>
+<h1>Where did my quota go? Analyse your logs in the browser</h1>
+<p>Pick the folder Codex or Claude Code keeps its logs in. The files are read <b>inside this page</b>; nothing is uploaded (you can turn off your network after the page loads and it still works). Prefer a terminal? <code>npx github:lowkey-studio/quotatrace</code></p>
+
+<div class="card">
+<p style="margin-top:0"><b>Codex:</b> the <code>sessions</code> folder inside <code>.codex</code> in your home folder: <code>~/.codex/sessions</code> on Mac/Linux, <code>C:\Users\&lt;you&gt;\.codex\sessions</code> on Windows.<br>
+<b>Claude Code:</b> the <code>projects</code> folder inside <code>.claude</code> (<code>~/.claude/projects</code>).<br>
+<span class="small">Hidden folders: on Mac press <b>Cmd+Shift+.</b> in the picker; on Windows type the path into the picker's address bar.</span></p>
+<div class="row">
+<label class="btn">Pick a logs folder<input id="dir" type="file" webkitdirectory directory multiple></label>
+<label class="btn" style="background:#3c5a4c">…or pick .jsonl files<input id="files" type="file" accept=".jsonl" multiple></label>
+<span>Period <select id="since"><option value="7">last 7 days</option><option value="14">last 14 days</option><option value="30" selected>last 30 days</option><option value="90">last 90 days</option><option value="0">everything</option></select></span>
+<label class="small" style="cursor:pointer"><u>optional: Claude meter file</u><input id="meter" type="file" accept=".jsonl"></label>
+</div>
+<p id="status"></p>
+</div>
+
+<div id="actions" class="row" style="display:none">
+<button id="dl">Download report (.md)</button><button class="sec" id="cp">Copy report</button>
+</div>
+<div id="out"></div>
+<div id="cta" class="card cta" style="display:none">
+<b>Want a person to read this?</b> QuotaTrace Review ($19): email the downloaded report to quotatrace@appin60.com and get back the causes, ranked fixes for your setup and, if the numbers support it, a ready-to-send support ticket, within 6 hours. <a href="./#review">Details and checkout</a>.
+</div>
+<p class="small">The report holds counts only: session ids are one-way hashes, with no prompts, paths, file names or outputs. Open source: <a href="https://github.com/lowkey-studio/quotatrace">github.com/lowkey-studio/quotatrace</a>.</p>
+</main>
+<script type="module">
+import { configure, analyseCodex, quotaAnalysis, analyseClaude, buildReport } from './core.mjs';
+const $ = id => document.getElementById(id);
+let meterText = '', lastPicked = null, lastReport = '';
+
+async function* fileLines(file) {
+  const reader = file.stream().pipeThrough(new TextDecoderStream()).getReader();
+  let buf = '';
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += value;
+    let i;
+    while ((i = buf.indexOf('\n')) >= 0) { yield buf.slice(0, i).replace(/\r$/, ''); buf = buf.slice(i + 1); }
+  }
+  if (buf) yield buf;
+}
+
+function md2html(md) {
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const inline = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/(https?:\/\/[^\s)]+)/g, '<a href="$1">$1</a>');
+  const out = []; const lines = md.split('\n'); let i = 0;
+  while (i < lines.length) {
+    const l = lines[i];
+    if (l.startsWith('|')) {
+      const rows = []; while (i < lines.length && lines[i].startsWith('|')) rows.push(lines[i++]);
+      const cells = r => r.slice(1, -1).split(' | ').map(x => x.trim());
+      let h = '<table><tr>' + cells(rows[0]).map(c => `<th>${inline(c)}</th>`).join('') + '</tr>';
+      for (const r of rows.slice(2)) h += '<tr>' + cells(r).map(c => `<td>${inline(c)}</td>`).join('') + '</tr>';
+      out.push(h + '</table>'); continue;
+    }
+    if (l.startsWith('- ')) { const items = []; while (i < lines.length && lines[i].startsWith('- ')) items.push(lines[i++].slice(2)); out.push('<ul>' + items.map(x => `<li>${inline(x)}</li>`).join('') + '</ul>'); continue; }
+    const m = /^(#{1,3}) (.*)/.exec(l);
+    if (m) out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`);
+    else if (l === '---') out.push('<hr>');
+    else if (l.trim()) out.push(`<p>${inline(l)}</p>`);
+    i++;
+  }
+  return out.join('\n');
+}
+
+async function run(fileList) {
+  lastPicked = fileList;
+  const all = [...fileList].filter(f => f.name.endsWith('.jsonl'));
+  const rel = f => f.webkitRelativePath || f.name;
+  const codex = all.filter(f => /rollout-/.test(f.name));
+  const claude = all.filter(f => !/rollout-/.test(f.name) && !/claude-limits/.test(f.name));
+  if (!codex.length && !claude.length) { $('status').textContent = 'No Codex rollout files or Claude Code transcripts (.jsonl) found in that selection.'; return; }
+  const days = Number($('since').value);
+  const sinceMs = days ? Date.now() - days * 864e5 : 0;
+  configure({ sinceMs, untilMs: Infinity, top: 10, meterText, codexLabel: '.codex', claudeLabel: '.claude' });
+  const mk = fs => fs.map(f => ({ path: rel(f), mtimeMs: f.lastModified, lines: () => fileLines(f) }));
+  $('status').textContent = `Reading ${codex.length} Codex and ${claude.length} Claude Code files…`;
+  const t0 = performance.now();
+  const c = codex.length ? await analyseCodex(mk(codex)) : null;
+  const q = c ? quotaAnalysis(c) : null;
+  const cl = claude.length ? await analyseClaude(mk(claude)) : null;
+  lastReport = buildReport(c, q, cl);
+  $('out').innerHTML = md2html(lastReport);
+  $('actions').style.display = 'flex'; $('cta').style.display = 'block';
+  $('status').textContent = `Done in ${((performance.now() - t0) / 1000).toFixed(1)} s. ${c ? c.calls.length + ' Codex calls' : ''}${c && cl ? ', ' : ''}${cl ? cl.calls.length + ' Claude Code calls' : ''}.`;
+  try { window.goatcounter && window.goatcounter.count && window.goatcounter.count({ path: 'app-run', title: 'analysis run', event: true }); } catch {}
+}
+$('dir').onchange = e => run(e.target.files);
+$('files').onchange = e => run(e.target.files);
+$('since').onchange = () => lastPicked && run(lastPicked);
+$('meter').onchange = async e => { meterText = e.target.files[0] ? await e.target.files[0].text() : ''; if (lastPicked) run(lastPicked); };
+$('dl').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([lastReport], { type: 'text/markdown' })); a.download = 'quotatrace-report.md'; a.click(); };
+$('cp').onclick = async () => { await navigator.clipboard.writeText(lastReport); $('cp').textContent = 'Copied'; setTimeout(() => $('cp').textContent = 'Copy report', 1500); };
+</script>
+</body></html>

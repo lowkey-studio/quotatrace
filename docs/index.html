@@ -16,12 +16,14 @@ table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px
 .btn{display:inline-block;background:var(--acc);color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600}
 .small{font-size:.9rem;color:var(--mut)}ul{padding-left:1.2em}a{color:var(--acc)}
 </style>
+<script data-goatcounter="https://quotatrace.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body><main>
 <p class="small">Low Key Studio · open source · runs locally</p>
 <h1>Where did my Codex / Claude Code quota go?</h1>
 <p class="lead">QuotaTrace reads the session logs already on your machine and lines up your plan's quota percentage with the tokens behind every call. You see which quota jumps were out of line with your work, and what actually burned your tokens.</p>
 <pre>npx github:lowkey-studio/quotatrace --since 30d</pre>
+<p><b>No terminal?</b> <a href="app.html">Run it in your browser</a>: pick your <code>.codex/sessions</code> or <code>.claude/projects</code> folder, and the analysis runs inside the page with nothing uploaded.</p>
 <p class="small">Node 18+, no dependencies, nothing uploaded. Writes <code>quotatrace-report.md</code> with counts only (hashed session ids, no prompts, paths or file names), so you can attach it to an issue or a support ticket. Source: <a href="https://github.com/lowkey-studio/quotatrace">github.com/lowkey-studio/quotatrace</a></p>
 
 <h2>What the report shows</h2>
@@ -55,7 +57,7 @@ table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px
 <li>if the report shows quota jumps out of line with your tokens, a ready-to-send support ticket that cites the timestamps and token counts.</li>
 </ul>
 <p>The report holds counts only, so you never send code or prompts. If your report can't support any finding, you get a full refund.</p>
-<p><a class="btn" href="https://whop.com/checkout/plan_9VoVKeQyFoaJM">Get a review, $19</a></p>
+<p><a class="btn" href="https://whop.com/checkout/plan_9VoVKeQyFoaJM" onclick="window.goatcounter&&goatcounter.count({path:'checkout-click',title:'review checkout click',event:true})">Get a review, $19</a></p>
 <p class="small">Prefer crypto? Send 19 USDC on Base, or 19 USDC/USDT on Arbitrum One, to <code>0xB442daCAE60C07bb5dB8f33C8a6c1572d8F24e83</code> and email the transaction hash with your report.</p>
 <p class="small">Card checkout via Whop. Reviews are delivered by email from quotatrace@appin60.com. Orders for this round are accepted until <b>2026-10-16 02:50 UTC</b>, so every order can be delivered within its 6 hours.</p>
 </div>
@@ -65,5 +67,5 @@ table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px
 
 <h2>Caveats</h2>
 <p class="small">Only calls logged on the machine you run it on are counted. Codex reports quota in whole points, so short windows are noisy. Tool-output sizes are estimated at 4 characters per token. Claude Code does not log your plan's usage percentage, so its section reports tokens. QuotaTrace is not affiliated with OpenAI or Anthropic.</p>
-<p class="small">Contact: quotatrace@appin60.com</p>
+<p class="small">Contact: quotatrace@appin60.com · <a href="https://quotatrace.goatcounter.com/">public visit counter</a></p>
 </main></body></html>

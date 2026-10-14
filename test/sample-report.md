@@ -1,6 +1,6 @@
 # QuotaTrace report
 
-Period: 2026-10-01 00:00 UTC to now · generated 2026-10-14 09:30 UTC · quotatrace 0.4.0
+Period: 2026-10-01 00:00 UTC to now · generated 2026-10-14 09:42 UTC · quotatrace 0.5.0
 
 Counts only. Session ids are one-way hashes; no prompts, paths, file names or outputs are included, so you can share this file.
 
@@ -50,16 +50,16 @@ Tool outputs stay in context and are re-sent on every later call until a compact
 
 | session | tool | output size (est. tokens) | re-sent | est. tokens re-sent |
 |---|---|---|---|---|
-| 6f8fee2a | exec | 60,000 | 109× | 6.54M |
-| 6f8fee2a | exec | 450 | 119× | 0.05M |
-| 6f8fee2a | exec | 450 | 118× | 0.05M |
-| 6f8fee2a | sleep | 450 | 117× | 0.05M |
-| 6f8fee2a | exec | 450 | 116× | 0.05M |
-| 6f8fee2a | exec | 450 | 115× | 0.05M |
-| 6f8fee2a | sleep | 450 | 114× | 0.05M |
-| 6f8fee2a | exec | 450 | 113× | 0.05M |
-| 6f8fee2a | exec | 450 | 112× | 0.05M |
-| 6f8fee2a | sleep | 450 | 111× | 0.05M |
+| 50e5ff40 | exec | 60,000 | 109× | 6.54M |
+| 50e5ff40 | exec | 450 | 119× | 0.05M |
+| 50e5ff40 | exec | 450 | 118× | 0.05M |
+| 50e5ff40 | sleep | 450 | 117× | 0.05M |
+| 50e5ff40 | exec | 450 | 116× | 0.05M |
+| 50e5ff40 | exec | 450 | 115× | 0.05M |
+| 50e5ff40 | sleep | 450 | 114× | 0.05M |
+| 50e5ff40 | exec | 450 | 113× | 0.05M |
+| 50e5ff40 | exec | 450 | 112× | 0.05M |
+| 50e5ff40 | sleep | 450 | 111× | 0.05M |
 
 ### By session kind
 
@@ -73,8 +73,8 @@ Subagents, `exec` runs and any background thread that writes a rollout file are 
 
 | session | kind | model | effort | calls | tokens | uncached in | peak context | compactions |
 |---|---|---|---|---|---|---|---|---|
-| 6f8fee2a | ? | gpt-6.1-sol | high | 120 | 14.21M | 0.99M | 167,550 | 0 |
-| 1bfc9784 | ? | gpt-6-astra | xhigh | 60 | 2.49M | 0.17M | 63,000 | 0 |
+| 50e5ff40 | ? | gpt-6.1-sol | high | 120 | 14.21M | 0.99M | 167,550 | 0 |
+| 1316b6e5 | ? | gpt-6-astra | xhigh | 60 | 2.49M | 0.17M | 63,000 | 0 |
 
 ### What to change
 

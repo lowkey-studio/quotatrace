@@ -23,6 +23,16 @@ Node 18+. No dependencies. Nothing is uploaded. The report contains counts only:
 
 Example output (from synthetic logs): [test/sample-report.md](test/sample-report.md)
 
+## Trust and privacy
+
+You shouldn't have to take a stranger's word for what a tool does with your logs, so it's built to be checked:
+
+- **No network access.** `bin/quotatrace.mjs` and `bin/core.mjs` import only `fs`, `path`, `os` and `readline`; there is no `fetch`, `http`, `net` or `child_process` in them. Check with `grep -nE "fetch|http|net|child_process" bin/quotatrace.mjs bin/core.mjs`. (`bin/meter.mjs` uses `child_process` only to run *your own* previous status line command.)
+- **Small and readable.** About 600 lines of plain JavaScript, no dependencies, nothing minified. Read it before you run it, or pin a commit: `npx github:lowkey-studio/quotatrace#<commit>`.
+- **Read-only.** It reads `.jsonl` logs and writes one report file. Only `meter install` changes anything (your Claude `settings.json`, backed up first).
+- **The browser version** reads the folder you pick inside the page. Load it, disconnect from the network, and it still works.
+- **The report holds counts only**, so check it before sharing: no prompts, paths, file names or outputs.
+
 ## Claude Code quota percentage (optional meter)
 
 Claude Code transcripts log tokens but not your plan's usage percentage; only the status line receives it. To record it from now on:

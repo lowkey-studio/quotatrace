@@ -1,0 +1,13 @@
+{
+  "name": "quotatrace",
+  "version": "0.2.0",
+  "description": "Where did my Codex / Claude Code quota go? Local, zero-dependency report from your session logs.",
+  "type": "module",
+  "bin": { "quotatrace": "bin/quotatrace.mjs" },
+  "files": ["bin"],
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "homepage": "https://quotatrace.appin60.com",
+  "repository": "github:lowkey-studio/quotatrace",
+  "keywords": ["codex", "claude-code", "usage", "quota", "tokens", "rate-limit"]
+}

@@ -15,6 +15,8 @@ npx github:lowkey-studio/quotatrace --since 30d
 npx github:lowkey-studio/quotatrace --only codex --since 2026-10-01
 ```
 
+No git installed? `npx https://codeload.github.com/lowkey-studio/quotatrace/tar.gz/refs/heads/main` works too.
+
 No terminal? Use the browser version at https://quotatrace.appin60.com/app.html: pick your logs folder, and the analysis runs inside the page with nothing uploaded.
 
 Node 18+. No dependencies. Nothing is uploaded. The report contains counts only: session ids are one-way hashes, and no prompts, paths, file names or outputs appear in it, so you can attach it to an issue or a support ticket.

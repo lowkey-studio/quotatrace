@@ -7,7 +7,7 @@ import os from 'node:os';
 import readline from 'node:readline';
 import crypto from 'node:crypto';
 
-const VERSION = '0.3.0';
+const VERSION = '0.4.0';
 const args = parseArgs(process.argv.slice(2));
 if (args.help) { usage(); process.exit(0); }
 if (args.version) { console.log(VERSION); process.exit(0); }
@@ -148,7 +148,12 @@ async function analyseCodex() {
     await eachLine(f, d => {
       const ts = Date.parse(d.timestamp || '') || 0;
       const p = (d.payload && typeof d.payload === 'object') ? d.payload : {};
-      if (d.type === 'session_meta') { S.origin = p.originator || p.source || ''; S.cli = p.cli_version || ''; return; }
+      if (d.type === 'session_meta') {
+        S.origin = p.originator || ''; S.cli = p.cli_version || '';
+        const src = p.source;
+        S.kind = typeof src === 'string' ? src : (src && typeof src === 'object') ? Object.keys(src)[0] + ((src[Object.keys(src)[0]] && typeof src[Object.keys(src)[0]] === 'object') ? ':' + Object.keys(src[Object.keys(src)[0]])[0] : '') : '?';
+        return;
+      }
       if (d.type === 'turn_context') { S.model = p.model || S.model; S.effort = p.effort || p.reasoning_effort || S.effort; return; }
       if (d.type === 'compacted' || (d.type === 'event_msg' && /compact/i.test(p.type || ''))) {
         if (d.type === 'compacted') { compactions++; S.compactions++; local.push({ compaction: true, ts }); }
@@ -388,9 +393,14 @@ function codexSection(c, q) {
   L.push(`Tool outputs stay in context and are re-sent on every later call until a compaction. Estimated total: ${mt(allReplay)} input tokens came from re-sending earlier tool outputs (estimate: 4 characters ≈ 1 token).\n`);
   L.push(table(['session', 'tool', 'output size (est. tokens)', 're-sent', 'est. tokens re-sent'], topTools.map(t => [t.session, t.name, fmt(t.est), fmt(t.replays) + '×', mt(t.replayTokens)])));
 
+  const kinds = new Map();
+  for (const ss of c.sessions.values()) { const k = (ss.kind || '?') + (ss.origin ? ` (${ss.origin})` : ''); const r = kinds.get(k) || { n: 0, calls: 0, tok: 0, unc: 0 }; r.n++; r.calls += ss.calls; r.tok += ss.tokens; r.unc += ss.uncached; kinds.set(k, r); }
+  L.push(`### By session kind\n\nSubagents, \`exec\` runs and any background thread that writes a rollout file are listed separately; all of them draw on the same quota. Background work that writes no rollout file shows up only as quota jumps with no local calls.\n`);
+  L.push(table(['kind (client)', 'sessions', 'calls', 'tokens', 'share', 'uncached in'], [...kinds.entries()].sort((a, b) => b[1].tok - a[1].tok).map(([k, r]) => [k, fmt(r.n), fmt(r.calls), mt(r.tok), pct(r.tok, T.tot), mt(r.unc)])));
+
   L.push(`### Heaviest sessions\n`);
-  L.push(table(['session', 'model', 'effort', 'calls', 'tokens', 'uncached in', 'peak context', 'compactions'],
-    [...c.sessions.values()].sort((a, b) => b.tokens - a.tokens).slice(0, TOP).map(s => [s.id, s.model, s.effort || '-', fmt(s.calls), mt(s.tokens), mt(s.uncached), fmt(s.peak), s.compactions])));
+  L.push(table(['session', 'kind', 'model', 'effort', 'calls', 'tokens', 'uncached in', 'peak context', 'compactions'],
+    [...c.sessions.values()].sort((a, b) => b.tokens - a.tokens).slice(0, TOP).map(s => [s.id, s.kind || '?', s.model, s.effort || '-', fmt(s.calls), mt(s.tokens), mt(s.uncached), fmt(s.peak), s.compactions])));
 
   const tips = [];
   if (bigLow.length > c.calls.length * 0.2) tips.push('Many full-context calls do almost nothing. Start a fresh thread per task, or hand long-running waits to a script instead of letting the agent poll.');

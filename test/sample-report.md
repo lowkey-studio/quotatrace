@@ -1,6 +1,6 @@
 # QuotaTrace report
 
-Period: 2026-10-01 00:00 UTC to now · generated 2026-10-14 09:20 UTC · quotatrace 0.3.0
+Period: 2026-10-01 00:00 UTC to now · generated 2026-10-14 09:30 UTC · quotatrace 0.4.0
 
 Counts only. Session ids are one-way hashes; no prompts, paths, file names or outputs are included, so you can share this file.
 
@@ -61,12 +61,20 @@ Tool outputs stay in context and are re-sent on every later call until a compact
 | 6f8fee2a | exec | 450 | 112× | 0.05M |
 | 6f8fee2a | sleep | 450 | 111× | 0.05M |
 
+### By session kind
+
+Subagents, `exec` runs and any background thread that writes a rollout file are listed separately; all of them draw on the same quota. Background work that writes no rollout file shows up only as quota jumps with no local calls.
+
+| kind (client) | sessions | calls | tokens | share | uncached in |
+|---|---|---|---|---|---|
+| ? (codex_cli_rs) | 2 | 180 | 16.69M | 100.0% | 1.16M |
+
 ### Heaviest sessions
 
-| session | model | effort | calls | tokens | uncached in | peak context | compactions |
-|---|---|---|---|---|---|---|---|
-| 6f8fee2a | gpt-6.1-sol | high | 120 | 14.21M | 0.99M | 167,550 | 0 |
-| 1bfc9784 | gpt-6-astra | xhigh | 60 | 2.49M | 0.17M | 63,000 | 0 |
+| session | kind | model | effort | calls | tokens | uncached in | peak context | compactions |
+|---|---|---|---|---|---|---|---|---|
+| 6f8fee2a | ? | gpt-6.1-sol | high | 120 | 14.21M | 0.99M | 167,550 | 0 |
+| 1bfc9784 | ? | gpt-6-astra | xhigh | 60 | 2.49M | 0.17M | 63,000 | 0 |
 
 ### What to change
 

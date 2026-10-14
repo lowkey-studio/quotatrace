@@ -197,7 +197,8 @@ async function analyseCodex() {
           for (const which of ['primary', 'secondary']) {
             const w = rl[which];
             if (!w || w.used_percent == null) continue;
-            snaps.push({ ts, key: `${rl.limit_id || 'codex'}|${rl.plan_type || '?'}|${w.window_minutes}|${Math.round((w.resets_at || 0) / 900)}`, window: w.window_minutes, resets: w.resets_at, used: w.used_percent, plan: rl.plan_type || '?', call, credits: rl.credits && rl.credits.balance });
+            const resets = w.resets_at ?? (w.resets_in_seconds != null ? Math.round(ts / 1000 + w.resets_in_seconds) : 0);
+            snaps.push({ ts, key: `${rl.limit_id || 'codex'}|${rl.plan_type || '?'}|${w.window_minutes}|${Math.round(resets / 900)}`, window: w.window_minutes, resets, used: w.used_percent, plan: rl.plan_type || '?', call, credits: rl.credits && rl.credits.balance });
           }
         }
       }

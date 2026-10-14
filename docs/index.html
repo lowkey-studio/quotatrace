@@ -30,7 +30,7 @@ table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px
 <li><b>Quota points per million tokens, per window.</b> Codex logs <code>used_percent</code> with each call. Comparable work should cost comparable points per million tokens; a sudden multiple on the same plan and model points to metering, not you.</li>
 <li><b>Quota jumps out of line with the tokens behind them</b>, with UTC timestamps. Jumps with zero local calls point to another device, a cloud task or background use.</li>
 <li><b>Where the tokens went:</b> context replay, big-context calls that produced almost nothing, sleep/wait polling, and the tool outputs that were re-sent on every later call (size × times re-sent).</li>
-<li><b>Claude Code:</b> cache writes vs reads, cache rebuilt after a pause, subagent share, and the tool results that were re-read the most.</li>
+<li><b>Claude Code:</b> cache writes vs reads, cache rebuilt after a pause, subagent share, and the tool results that were re-read the most. Claude Code keeps your plan's usage percentage out of its transcripts, so <code>quotatrace meter install</code> adds a status line hook that records it (your existing status line keeps working). After that you get quota points per 1M tokens for Claude Code too.</li>
 </ul>
 </div>
 <p>Example rows from the sample report (synthetic logs):</p>
@@ -56,6 +56,7 @@ table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px
 </ul>
 <p>The report holds counts only, so you never send code or prompts. If your report can't support any finding, you get a full refund.</p>
 <p><a class="btn" href="https://whop.com/checkout/plan_9VoVKeQyFoaJM">Get a review, $19</a></p>
+<p class="small">Prefer crypto? Send 19 USDC on Base, or 19 USDC/USDT on Arbitrum One, to <code>0xB442daCAE60C07bb5dB8f33C8a6c1572d8F24e83</code> and email the transaction hash with your report.</p>
 <p class="small">Card checkout via Whop. Reviews are delivered by email from quotatrace@appin60.com. Orders for this round are accepted until <b>2026-10-16 02:50 UTC</b>, so every order can be delivered within its 6 hours.</p>
 </div>
 

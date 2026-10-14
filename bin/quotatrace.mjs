@@ -269,8 +269,14 @@ async function analyseClaude() {
       const m = d.message;
       if (!m || typeof m !== 'object') return;
       if (d.type === 'assistant' && m.usage) {
-        if (Array.isArray(m.content)) for (const b of m.content) if (b && b.type === 'tool_use') toolNames.set(b.id, b.name);
+        let pollNext = false;
+        if (Array.isArray(m.content)) for (const b of m.content) if (b && b.type === 'tool_use') {
+          toolNames.set(b.id, b.name);
+          const cmd = b.input && typeof b.input.command === 'string' ? b.input.command : '';
+          if (['BashOutput', 'TaskOutput', 'ScheduleWakeup', 'Monitor', 'Sleep', 'Wait'].includes(b.name) || /^\s*sleep\s+\d/.test(cmd)) pollNext = true;
+        }
         const key = (m.id || '') + ':' + (d.requestId || '');
+        if (pollNext) S.pollPending = true;
         if (m.id && seen.has(key)) return;
         seen.add(key);
         if (!ts || ts < sinceMs || ts > untilMs) return;
@@ -284,12 +290,14 @@ async function analyseClaude() {
           output: u.output_tokens || 0,
         };
         call.ctx = call.input + call.cacheRead + call.cacheWrite;
+        call.poll = !!S.pollWas; S.pollWas = false;
         call.total = call.ctx + call.output;
         calls.push(call); local.push(call);
         S.model = call.model; S.calls++; S.tokens += call.total; S.peak = Math.max(S.peak, call.ctx);
         return;
       }
       if (d.type === 'user' && Array.isArray(m.content)) {
+        if (S.pollPending) { S.pollWas = true; S.pollPending = false; }
         for (const b of m.content) {
           if (b && b.type === 'tool_result') fileTools.push({ name: toolNames.get(b.tool_use_id) || 'tool', est: Math.round(outLen(b.content) / 4), at: local.length, ts });
         }
@@ -448,6 +456,9 @@ function claudeSection(c) {
   L.push(`### Where the tokens went\n`);
   L.push(`- **Cache rebuilt after a pause:** ${fmt(idle.length)} calls re-wrote the context to cache after it expired (gap longer than the cache lifetime), writing ${mt(idleW)} tokens (${pct(idleW, T.w)} of all cache writes).`);
   L.push(`- **Context replay:** ${fmt(big.length)} calls (${pct(big.length, c.calls.length)}) carried 100k+ tokens of context.`);
+  const bigLow = big.filter(x => x.output < 300), polls = c.calls.filter(x => x.poll), pollTok = polls.reduce((s, x) => s + x.total, 0);
+  L.push(`- **Big context, tiny answer:** ${fmt(bigLow.length)} of those produced under 300 output tokens (${mt(bigLow.reduce((s, x) => s + x.total, 0))} tokens): status checks and one-command steps paid at full-context price.`);
+  L.push(`- **Waiting and polling:** ${fmt(polls.length)} calls followed a sleep, a background-output check or a scheduled wake-up, costing ${mt(pollTok)} (${pct(pollTok, T.t)}).`);
   const allReplay = c.tools.reduce((s, t) => s + t.replayTokens, 0);
   L.push(`- **Re-sent tool results:** about ${mt(allReplay)} tokens of context came from tool results re-read on later calls.\n`);
   const topTools = c.tools.filter(t => t.est > 0).sort((a, b) => b.replayTokens - a.replayTokens).slice(0, TOP);

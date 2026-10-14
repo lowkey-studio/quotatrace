@@ -328,7 +328,7 @@ function claudeQuota(cl) {
   const snaps = [];
   for (const l of lines) {
     const ts = Date.parse(l.ts); if (!ts || ts < sinceMs || ts > untilMs) continue;
-    for (const [name, [used, resets]] of Object.entries(l.w || {})) snaps.push({ ts, name, used, key: name + '|' + Math.round((Number(resets) || 0) / 900) });
+    for (const [name, [used, resets]] of Object.entries(l.w || {})) snaps.push({ ts, name, used, key: name + '|' + Math.round(((typeof resets === 'string' && isNaN(Number(resets)) ? Date.parse(resets) / 1000 : Number(resets)) || 0) / 900) });
   }
   if (!snaps.length) return { windows: [], spikes: [], snaps: 0 };
   snaps.sort((a, b) => a.ts - b.ts);

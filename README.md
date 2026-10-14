@@ -23,11 +23,28 @@ Node 18+. No dependencies. Nothing is uploaded. The report contains counts only:
 
 Example output (from synthetic logs): [test/sample-report.md](test/sample-report.md)
 
+## Live burn rate
+
+```sh
+npx github:lowkey-studio/quotatrace live            # refreshes every 5 s, last 10 minutes
+```
+
+```
+QUOTA WINDOW    USED   PTS/HOUR  EMPTY IN
+codex 5h        58%    36.0      1.2 h
+codex week      66%    12.0      2.8 h
+
+SESSION   TOOL    MODEL                 TOK/MIN  CALLS  CONTEXT  CACHE HIT
+d86c9e70  claude  claude-opus-5-5       1.3M     7      356k     100%
+```
+
+Per running session: tokens per minute, calls, current context size and the last call's prompt-cache hit rate. Per quota window: points used per hour over the last 30 minutes and the projected time until it's empty (or "resets first"). Codex quota readings come from its logs; for Claude Code run `meter install` first. Options: `--window <min>`, `--interval <sec>`, `--once`.
+
 ## Trust and privacy
 
 You shouldn't have to take a stranger's word for what a tool does with your logs, so it's built to be checked:
 
-- **No network access.** `bin/quotatrace.mjs` and `bin/core.mjs` import only `fs`, `path`, `os` and `readline`; there is no `fetch`, `http`, `net` or `child_process` in them. Check with `grep -nE "^import|fetch\(" bin/quotatrace.mjs bin/core.mjs` (the only URLs in the code are links printed in the report). (`bin/meter.mjs` uses `child_process` only to run *your own* previous status line command.)
+- **No network access.** `bin/quotatrace.mjs` and `bin/core.mjs` import only `fs`, `path`, `os` and `readline` (and `bin/live.mjs` the same minus `readline`); there is no `fetch`, `http`, `net` or `child_process` in them. Check with `grep -nE "^import|fetch\(" bin/quotatrace.mjs bin/core.mjs` (the only URLs in the code are links printed in the report). (`bin/meter.mjs` uses `child_process` only to run *your own* previous status line command.)
 - **Small and readable.** About 600 lines of plain JavaScript, no dependencies, nothing minified. Read it before you run it, or pin a commit: `npx github:lowkey-studio/quotatrace#<commit>`.
 - **Read-only.** It reads `.jsonl` logs and writes one report file. Only `meter install` changes anything (your Claude `settings.json`, backed up first).
 - **The browser version** reads the folder you pick inside the page. Load it, disconnect from the network, and it still works.

@@ -1,6 +1,6 @@
 // QuotaTrace core: analysis and report building, shared by the CLI and the browser app.
 // Pure JavaScript, no Node APIs. Inputs are file objects: { path, mtimeMs, lines() -> async iterable of strings }.
-export const VERSION = '0.5.0';
+export const VERSION = '0.6.0';
 let sinceMs = 0, untilMs = Infinity, TOP = 10, codexLabel = '~/.codex', claudeLabel = '~/.claude', meterText = '';
 export function configure(o) {
   if (o.sinceMs != null) sinceMs = o.sinceMs;

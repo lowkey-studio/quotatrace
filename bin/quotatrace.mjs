@@ -17,6 +17,7 @@ const TOP = Number(args.top || 10);
 const codexHome = args['codex-home'] || process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
 const claudeHome = args['claude-home'] || process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
 if (process.argv[2] === 'meter') { meterCmd(process.argv[3]); process.exit(0); }
+if (process.argv[2] === 'live') { const { live } = await import('./live.mjs'); await live({ codexHome, claudeHome, intervalSec: Number(args.interval || 5), windowMin: Number(args.window || 10), once: !!args.once }); }
 
 function usage() {
   console.log(`quotatrace ${VERSION} - where did my Codex / Claude Code quota go?
@@ -37,6 +38,9 @@ Usage: npx github:lowkey-studio/quotatrace [options]
 Claude Code does not log your plan's usage percentage in its transcripts. To record it from now on:
   npx github:lowkey-studio/quotatrace meter install     (adds a status line hook; keeps your old one)
   npx github:lowkey-studio/quotatrace meter uninstall
+
+Live burn-rate view (tokens per minute and cache hit per session, quota points per hour, time to empty):
+  npx github:lowkey-studio/quotatrace live [--window 10] [--interval 5]
 
 Everything runs locally. The report holds counts only: no prompts, paths or file names.`);
 }
@@ -75,7 +79,7 @@ function parseArgs(a) {
     const k = a[i];
     if (!k.startsWith('--')) continue;
     const key = k.slice(2);
-    if (['help', 'version', 'json', 'share'].includes(key)) o[key] = true;
+    if (['help', 'version', 'json', 'share', 'once'].includes(key)) o[key] = true;
     else o[key] = a[++i];
   }
   if (a.includes('-h')) o.help = true;
@@ -114,7 +118,7 @@ function fileObjs(paths) {
   return out;
 }
 
-(async () => {
+if (process.argv[2] !== 'live') (async () => {
   let meterText = '';
   try { meterText = fs.readFileSync(args['meter-file'] || path.join(os.homedir(), '.quotatrace', 'claude-limits.jsonl'), 'utf8'); } catch {}
   configure({ sinceMs, untilMs, top: TOP, meterText,

@@ -1,6 +1,6 @@
 # QuotaTrace report
 
-Period: 2026-10-01 00:00 UTC to now · generated 2026-10-14 09:07 UTC · quotatrace 0.2.0
+Period: 2026-10-01 00:00 UTC to now · generated 2026-10-14 09:20 UTC · quotatrace 0.3.0
 
 Counts only. Session ids are one-way hashes; no prompts, paths, file names or outputs are included, so you can share this file.
 

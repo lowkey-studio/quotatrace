@@ -19,6 +19,17 @@ Node 18+. No dependencies. Nothing is uploaded. The report contains counts only:
 
 Example output (from synthetic logs): [test/sample-report.md](test/sample-report.md)
 
+## Claude Code quota percentage (optional meter)
+
+Claude Code transcripts log tokens but not your plan's usage percentage; only the status line receives it. To record it from now on:
+
+```sh
+npx github:lowkey-studio/quotatrace meter install     # adds a status line hook, keeps your current status line
+npx github:lowkey-studio/quotatrace meter uninstall   # restores your previous status line
+```
+
+The hook copies a 50-line script to `~/.quotatrace/meter.mjs`, backs up `~/.claude/settings.json`, and appends `rate_limits` snapshots (5-hour, weekly and per-model windows) to `~/.quotatrace/claude-limits.jsonl` whenever they change. Later reports then show quota points per 1M tokens and out-of-line jumps for Claude Code too.
+
 ## Options
 
 | flag | meaning |

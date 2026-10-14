@@ -7,7 +7,7 @@ import os from 'node:os';
 import readline from 'node:readline';
 import crypto from 'node:crypto';
 
-const VERSION = '0.2.0';
+const VERSION = '0.3.0';
 const args = parseArgs(process.argv.slice(2));
 if (args.help) { usage(); process.exit(0); }
 if (args.version) { console.log(VERSION); process.exit(0); }
@@ -17,6 +17,7 @@ const untilMs = args.until ? Date.parse(args.until) : Infinity;
 const TOP = Number(args.top || 10);
 const codexHome = args['codex-home'] || process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
 const claudeHome = args['claude-home'] || process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
+if (process.argv[2] === 'meter') { meterCmd(process.argv[3]); process.exit(0); }
 
 const fmt = n => (n == null || Number.isNaN(n)) ? '-' : Math.round(n).toLocaleString('en-US');
 const mt = n => (n / 1e6).toFixed(2) + 'M';
@@ -41,7 +42,39 @@ Usage: npx github:lowkey-studio/quotatrace [options]
   --codex-home DIR            default $CODEX_HOME or ~/.codex
   --claude-home DIR           default $CLAUDE_CONFIG_DIR or ~/.claude
 
+Claude Code does not log your plan's usage percentage in its transcripts. To record it from now on:
+  npx github:lowkey-studio/quotatrace meter install     (adds a status line hook; keeps your old one)
+  npx github:lowkey-studio/quotatrace meter uninstall
+
 Everything runs locally. The report holds counts only: no prompts, paths or file names.`);
+}
+
+function meterCmd(action) {
+  const qdir = path.join(os.homedir(), '.quotatrace');
+  const settingsPath = path.join(claudeHome, 'settings.json');
+  let settings = {};
+  try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch (e) { if (fs.existsSync(settingsPath)) { console.error('Could not parse ' + settingsPath + '; not changing it.'); process.exit(1); } }
+  const meterPath = path.join(qdir, 'meter.mjs');
+  const ours = c => typeof c === 'string' && c.includes('.quotatrace');
+  if (action === 'install') {
+    fs.mkdirSync(qdir, { recursive: true });
+    fs.copyFileSync(new URL('./meter.mjs', import.meta.url), meterPath);
+    const cur = settings.statusLine && settings.statusLine.command;
+    if (cur && !ours(cur)) fs.writeFileSync(path.join(qdir, 'wrapped-statusline'), cur);
+    if (fs.existsSync(settingsPath)) fs.copyFileSync(settingsPath, settingsPath + '.quotatrace-backup');
+    settings.statusLine = { ...(settings.statusLine || {}), type: 'command', command: `node "${meterPath}"` };
+    fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+    console.log(`Installed. Claude Code will log rate-limit snapshots to ${path.join(qdir, 'claude-limits.jsonl')} on each status line refresh.` + (cur && !ours(cur) ? `\nYour previous status line (${cur}) still renders.` : '') + `\nBackup of your settings: ${settingsPath}.quotatrace-backup\nRun quotatrace again after some use to see quota points per 1M tokens for Claude Code.`);
+  } else if (action === 'uninstall') {
+    let wrapped = ''; try { wrapped = fs.readFileSync(path.join(qdir, 'wrapped-statusline'), 'utf8').trim(); } catch {}
+    if (settings.statusLine && ours(settings.statusLine.command)) {
+      if (wrapped) settings.statusLine.command = wrapped; else delete settings.statusLine;
+      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+    }
+    try { fs.unlinkSync(path.join(qdir, 'wrapped-statusline')); } catch {}
+    console.log('Removed the QuotaTrace status line hook' + (wrapped ? ' and restored your previous one.' : '.') + ' Recorded snapshots stay in ' + qdir);
+  } else console.log('usage: quotatrace meter install | uninstall');
 }
 
 function parseArgs(a) {
@@ -274,6 +307,33 @@ async function analyseClaude() {
   return { files: files.length, calls, tools, sessions };
 }
 
+function claudeQuota(cl) {
+  const f = args['meter-file'] || path.join(os.homedir(), '.quotatrace', 'claude-limits.jsonl');
+  let lines = [];
+  try { lines = fs.readFileSync(f, 'utf8').split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean); } catch { return null; }
+  const snaps = [];
+  for (const l of lines) {
+    const ts = Date.parse(l.ts); if (!ts || ts < sinceMs || ts > untilMs) continue;
+    for (const [name, [used, resets]] of Object.entries(l.w || {})) snaps.push({ ts, name, used, key: name + '|' + Math.round((Number(resets) || 0) / 900) });
+  }
+  if (!snaps.length) return { windows: [], spikes: [], snaps: 0 };
+  snaps.sort((a, b) => a.ts - b.ts);
+  const calls = cl.calls.slice().sort((a, b) => a.ts - b.ts);
+  const sumBetween = (t0, t1) => { let tot = 0, bill = 0; for (const c of calls) { if (c.ts <= t0) continue; if (c.ts > t1) break; tot += c.total; bill += c.input + c.cacheWrite + c.output; } return { tot, bill }; };
+  const byKey = new Map();
+  for (const s of snaps) {
+    let k = byKey.get(s.key);
+    if (!k) { k = { name: s.name, firstTs: s.ts, lastTs: s.ts, min: s.used, max: s.used, prev: s.used, prevTs: s.ts, steps: [] }; byKey.set(s.key, k); continue; }
+    if (s.used > k.prev) { const t = sumBetween(k.prevTs, s.ts); k.steps.push({ ts: s.ts, delta: s.used - k.prev, tokens: t.tot }); }
+    k.prev = s.used; k.prevTs = s.ts; k.lastTs = s.ts; k.min = Math.min(k.min, s.used); k.max = Math.max(k.max, s.used);
+  }
+  const windows = [...byKey.values()].map(k => { const t = sumBetween(k.firstTs, k.lastTs); const used = k.max - k.min; return { ...k, used, tokens: t.tot, bill: t.bill, perM: t.tot ? used / (t.tot / 1e6) : null, perMBill: t.bill ? used / (t.bill / 1e6) : null }; }).filter(w => w.used > 0 || w.tokens > 0).sort((a, b) => a.firstTs - b.firstTs);
+  const spikes = [];
+  for (const w of windows) { if (!w.perM) continue; for (const st of w.steps) { const expected = st.tokens / 1e6 * w.perM; if (st.delta >= 2 && st.delta > 3 * Math.max(expected, 0.34)) spikes.push({ ...st, window: w.name, expected }); } }
+  spikes.sort((a, b) => b.delta - a.delta);
+  return { windows, spikes, snaps: snaps.length };
+}
+
 // ---------------- report ----------------
 function table(head, rows) {
   if (!rows.length) return '_none_\n';
@@ -346,7 +406,18 @@ function claudeSection(c) {
   L.push(`## Claude Code\n`);
   if (!c.calls.length) { L.push(`No Claude Code model calls found in this period (looked in \`${path.join('~', path.relative(os.homedir(), claudeHome))}/projects\`).\n`); return L.join('\n'); }
   const T = c.calls.reduce((a, x) => { a.inp += x.input; a.r += x.cacheRead; a.w += x.cacheWrite; a.w1 += x.write1h; a.o += x.output; a.t += x.total; if (x.sidechain) a.side += x.total; return a; }, { inp: 0, r: 0, w: 0, w1: 0, o: 0, t: 0, side: 0 });
-  L.push(`${c.sessions.size} transcripts, ${fmt(c.calls.length)} model calls. Claude Code does not log your plan's usage percentage, so this section shows tokens. On the API, cache writes cost 1.25× (5-minute) or 2× (1-hour) the input price and cache reads 0.1×, so writes and output dominate cost.\n`);
+  const cq = claudeQuota(c);
+  L.push(`${c.sessions.size} transcripts, ${fmt(c.calls.length)} model calls.`);
+  if (cq && cq.windows.length) {
+    L.push(`### Quota used vs tokens (from the QuotaTrace meter, ${fmt(cq.snaps)} snapshots)\n`);
+    L.push(`"billable" = uncached input + cache writes + output; cache reads are excluded because they are a small fraction of the price. Only calls logged on this machine are counted.\n`);
+    L.push(table(['window', 'started', 'quota used', 'tokens', 'billable tokens', '% per 1M tokens', '% per 1M billable'], cq.windows.slice(-40).map(w => [w.name, new Date(w.firstTs).toISOString().slice(0, 16).replace('T', ' '), `${w.min}% → ${w.max}%`, mt(w.tokens), mt(w.bill), w.perM == null ? '-' : w.perM.toFixed(2), w.perMBill == null ? '-' : w.perMBill.toFixed(2)])));
+    L.push(`### Quota jumps out of line with the tokens behind them\n`);
+    L.push(table(['time (UTC)', 'window', 'quota jump', 'tokens since last step', 'expected at window average'], cq.spikes.slice(0, TOP).map(s => [new Date(s.ts).toISOString().slice(0, 16).replace('T', ' '), s.window, `+${s.delta}%`, s.tokens ? fmt(s.tokens) : '0 (no local calls)', `+${s.expected.toFixed(1)}%`])));
+  } else {
+    L.push(`Claude Code does not write your plan's usage percentage into transcripts. Run \`npx github:lowkey-studio/quotatrace meter install\` once to start recording it from the status line; later reports will then show quota points per 1M tokens and out-of-line jumps here.\n`);
+  }
+  L.push(`### Tokens\n\nThe section below shows tokens. On the API, cache writes cost 1.25× (5-minute) or 2× (1-hour) the input price and cache reads 0.1×, so writes and output dominate cost.\n`);
   L.push(table(['', 'tokens', 'share'], [
     ['Cache reads', mt(T.r), pct(T.r, T.t)],
     ['Cache writes', mt(T.w), pct(T.w, T.t)],

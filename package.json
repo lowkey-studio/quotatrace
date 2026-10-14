@@ -1,6 +1,6 @@
 {
   "name": "quotatrace",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "Where did my Codex / Claude Code quota go? Local, zero-dependency report from your session logs.",
   "type": "module",
   "bin": { "quotatrace": "bin/quotatrace.mjs" },

@@ -1,7 +1,7 @@
 // QuotaTrace core: analysis and report building, shared by the CLI and the browser app.
 // Pure JavaScript, no Node APIs. Inputs are file objects: { path, mtimeMs, lines() -> async iterable of strings }.
-export const VERSION = '0.6.1';
-let sinceMs = 0, untilMs = Infinity, TOP = 10, codexLabel = '~/.codex', claudeLabel = '~/.claude', meterText = '';
+export const VERSION = '0.7.0';
+let sinceMs = 0, untilMs = Infinity, TOP = 10, codexLabel = '~/.codex', claudeLabel = '~/.claude', meterText = '', claudeSnap = null;
 export function configure(o) {
   if (o.sinceMs != null) sinceMs = o.sinceMs;
   if (o.untilMs != null) untilMs = o.untilMs;
@@ -9,6 +9,7 @@ export function configure(o) {
   if (o.codexLabel) codexLabel = o.codexLabel;
   if (o.claudeLabel) claudeLabel = o.claudeLabel;
   meterText = o.meterText || '';
+  claudeSnap = o.claudeSnap || null;
 }
 const fmt = n => (n == null || Number.isNaN(n)) ? '-' : Math.round(n).toLocaleString('en-US');
 const mt = n => (n / 1e6).toFixed(2) + 'M';
@@ -329,6 +330,7 @@ export function claudeSection(c) {
   const T = c.calls.reduce((a, x) => { a.inp += x.input; a.r += x.cacheRead; a.w += x.cacheWrite; a.w1 += x.write1h; a.o += x.output; a.t += x.total; if (x.sidechain) a.side += x.total; return a; }, { inp: 0, r: 0, w: 0, w1: 0, o: 0, t: 0, side: 0 });
   const cq = claudeQuota(c);
   L.push(`${c.sessions.size} transcripts, ${fmt(c.calls.length)} model calls.`);
+  if (claudeSnap) L.push(`Plan utilization cached by Claude Code at ${new Date(claudeSnap.ts).toISOString().slice(0, 16).replace('T', ' ')} UTC: ` + Object.entries(claudeSnap.w).map(([k, [u]]) => `${k.replace('five_hour', '5-hour').replace('seven_day', 'weekly').replace(/_/g, ' ')} ${u}%`).join(', ') + '.\n');
   if (cq && cq.windows.length) {
     L.push(`### Quota used vs tokens (from the QuotaTrace meter, ${fmt(cq.snaps)} snapshots)\n`);
     L.push(`"billable" = uncached input + cache writes + output; cache reads are excluded because they are a small fraction of the price. Only calls logged on this machine are counted.\n`);

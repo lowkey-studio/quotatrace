@@ -52,7 +52,13 @@ You shouldn't have to take a stranger's word for what a tool does with your logs
 
 ## Claude Code quota percentage (optional meter)
 
-Claude Code transcripts log tokens but not your plan's usage percentage; only the status line receives it. To record it from now on:
+Claude Code transcripts log tokens but not your plan's usage percentage. Two ways to record it from now on:
+
+```sh
+npx github:lowkey-studio/quotatrace record    # leave running: logs the utilization snapshot Claude Code caches in ~/.claude.json; changes nothing
+```
+
+or, for a reading on every status line refresh:
 
 ```sh
 npx github:lowkey-studio/quotatrace meter install     # adds a status line hook, keeps your current status line

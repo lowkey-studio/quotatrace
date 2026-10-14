@@ -13,6 +13,7 @@ export async function live({ codexHome, claudeHome, intervalSec = 5, windowMin =
   const quota = new Map();     // window key -> [{ts, used, resets, name}]
   const meterFile = path.join(os.homedir(), '.quotatrace', 'claude-limits.jsonl');
   const seen = new Set();
+  let lastSnapTs = 0;
 
   const recentFiles = (dir, maxAgeMs) => {
     const out = [];
@@ -97,6 +98,8 @@ export async function live({ codexHome, claudeHome, intervalSec = 5, windowMin =
       }
       sessions.set(f, s);
     }
+    const snap = readClaudeJsonUtilization();
+    if (snap && snap.ts !== lastSnapTs) { lastSnapTs = snap.ts; for (const [name, [used, resets]] of Object.entries(snap.w)) addQuota('claude ' + name.replace('five_hour', '5h').replace('seven_day', 'week'), used, resets, snap.ts); }
     for (const line of (fs.existsSync(meterFile) ? readNew(meterFile) : [])) {
       let d; try { d = JSON.parse(line); } catch { continue; }
       const ts = Date.parse(d.ts) || Date.now();
@@ -153,4 +156,28 @@ export async function live({ codexHome, claudeHome, intervalSec = 5, windowMin =
   tick();
   if (once) return;
   setInterval(tick, intervalSec * 1000);
+}
+
+// Claude Code caches the plan's current utilization in ~/.claude.json (cachedUsageUtilization), refreshed now and then.
+export function readClaudeJsonUtilization(file = path.join(os.homedir(), '.claude.json')) {
+  let d; try { d = JSON.parse(fs.readFileSync(file, 'utf8')).cachedUsageUtilization; } catch { return null; }
+  if (!d || !d.utilization || !d.fetchedAtMs) return null;
+  const w = {};
+  for (const [k, v] of Object.entries(d.utilization)) {
+    if (v && typeof v === 'object' && typeof v.utilization === 'number' && /^(five_hour|seven_day)/.test(k)) w[k] = [v.utilization, v.resets_at ? Date.parse(v.resets_at) / 1000 : null];
+  }
+  return Object.keys(w).length ? { ts: d.fetchedAtMs, w } : null;
+}
+
+// Background recorder: appends each new ~/.claude.json utilization snapshot to the meter file. No settings changes.
+export async function record({ intervalSec = 60 }) {
+  const dir = path.join(os.homedir(), '.quotatrace'), out = path.join(dir, 'claude-limits.jsonl');
+  fs.mkdirSync(dir, { recursive: true });
+  let last = 0;
+  console.log(`Recording Claude Code utilization snapshots from ~/.claude.json to ${out} every ${intervalSec}s. Leave it running; Ctrl+C to stop.`);
+  const tick = () => {
+    const s = readClaudeJsonUtilization();
+    if (s && s.ts !== last) { last = s.ts; fs.appendFileSync(out, JSON.stringify({ ts: new Date(s.ts).toISOString(), s: 'claude.json', w: s.w }) + '\n'); }
+  };
+  tick(); setInterval(tick, intervalSec * 1000);
 }

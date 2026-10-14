@@ -17,6 +17,7 @@ const TOP = Number(args.top || 10);
 const codexHome = args['codex-home'] || process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
 const claudeHome = args['claude-home'] || process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
 if (process.argv[2] === 'meter') { meterCmd(process.argv[3]); process.exit(0); }
+if (process.argv[2] === 'record') { const { record } = await import('./live.mjs'); await record({ intervalSec: Number(args.interval || 60) }); }
 if (process.argv[2] === 'live') { const { live } = await import('./live.mjs'); await live({ codexHome, claudeHome, intervalSec: Number(args.interval || 5), windowMin: Number(args.window || 10), once: !!args.once }); }
 
 function usage() {
@@ -35,7 +36,9 @@ Usage: npx github:lowkey-studio/quotatrace [options]
   --codex-home DIR            default $CODEX_HOME or ~/.codex
   --claude-home DIR           default $CLAUDE_CONFIG_DIR or ~/.claude
 
-Claude Code does not log your plan's usage percentage in its transcripts. To record it from now on:
+Claude Code does not log your plan's usage percentage in its transcripts. To record it from now on, either
+  npx github:lowkey-studio/quotatrace record            (polls the snapshot Claude Code caches in ~/.claude.json; changes nothing)
+or
   npx github:lowkey-studio/quotatrace meter install     (adds a status line hook; keeps your old one)
   npx github:lowkey-studio/quotatrace meter uninstall
 
@@ -118,10 +121,11 @@ function fileObjs(paths) {
   return out;
 }
 
-if (process.argv[2] !== 'live') (async () => {
+if (process.argv[2] !== 'live' && process.argv[2] !== 'record') (async () => {
   let meterText = '';
   try { meterText = fs.readFileSync(args['meter-file'] || path.join(os.homedir(), '.quotatrace', 'claude-limits.jsonl'), 'utf8'); } catch {}
-  configure({ sinceMs, untilMs, top: TOP, meterText,
+  let claudeSnap = null; try { claudeSnap = (await import('./live.mjs')).readClaudeJsonUtilization(); } catch {}
+  configure({ sinceMs, untilMs, top: TOP, meterText, claudeSnap,
     codexLabel: path.join('~', path.relative(os.homedir(), codexHome)), claudeLabel: path.join('~', path.relative(os.homedir(), claudeHome)) });
   const doCodex = args.only !== 'claude', doClaude = args.only !== 'codex';
   const c = doCodex ? await analyseCodex(fileObjs([...walk(path.join(codexHome, 'sessions')), ...walk(path.join(codexHome, 'archived_sessions'))])) : null;

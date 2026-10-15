@@ -90,6 +90,6 @@ For each Codex rate-limit window (5-hour, weekly), QuotaTrace takes the quota po
 
 ## Want a person to read your report?
 
-QuotaTrace Review, $19: email your report and get back the specific causes, ranked fixes for your setup, and (if the numbers support it) a ready-to-send support ticket, within 6 hours. Details: https://quotatrace.appin60.com
+The paid review is closed for now.
 
 Built by Low Key Studio. MIT licence.

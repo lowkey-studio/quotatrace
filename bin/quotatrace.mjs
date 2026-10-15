@@ -143,7 +143,6 @@ if (process.argv[2] !== 'live' && process.argv[2] !== 'record') (async () => {
   if (cl && cl.calls.length) console.log(`Claude Code: ${cl.sessions.size} transcripts, ${cl.calls.length} calls, ${mt(cl.calls.reduce((s, x) => s + x.total, 0))} tokens.`);
   else if (cl) console.log('Claude Code: no calls in period.');
   console.log(`Report written to ${out}`);
-  if (!args.share) console.log('Want a person to read it and draft your support ticket? QuotaTrace Review, $19: https://quotatrace.appin60.com/#review');
   if (args.share) {
     const bodyTxt = 'Anonymous QuotaTrace numbers (per window: day, window minutes, plan, quota points used, k tokens, k uncached input, k output).\n\nPlan/price I pay: \nAnything unusual: \n\n```json\n' + JSON.stringify(sum) + '\n```\n';
     const url = 'https://github.com/lowkey-studio/quotatrace/issues/new?labels=data&title=' + encodeURIComponent('Quota data: ' + (sum.models[0] || 'codex')) + '&body=' + encodeURIComponent(bodyTxt);

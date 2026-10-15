@@ -1,6 +1,6 @@
 // QuotaTrace core: analysis and report building, shared by the CLI and the browser app.
 // Pure JavaScript, no Node APIs. Inputs are file objects: { path, mtimeMs, lines() -> async iterable of strings }.
-export const VERSION = '0.7.1';
+export const VERSION = '0.7.2';
 let sinceMs = 0, untilMs = Infinity, TOP = 10, codexLabel = '~/.codex', claudeLabel = '~/.claude', meterText = '', claudeSnap = null;
 export function configure(o) {
   if (o.sinceMs != null) sinceMs = o.sinceMs;
@@ -191,7 +191,7 @@ export async function analyseClaude(files) {
           ts, session: S.id, model: m.model || '?', sidechain: !!d.isSidechain || S.sidechain,
           input: u.input_tokens || 0, cacheRead: u.cache_read_input_tokens || 0, cacheWrite: u.cache_creation_input_tokens || 0,
           write1h: cc.ephemeral_1h_input_tokens || 0, write5m: cc.ephemeral_5m_input_tokens || 0,
-          output: u.output_tokens || 0,
+          output: u.output_tokens || 0, entry: d.entrypoint || '?',
         };
         call.ctx = call.input + call.cacheRead + call.cacheWrite;
         call.poll = !!S.pollWas; S.pollWas = false;
@@ -359,6 +359,11 @@ export function claudeSection(c) {
   L.push(`### Per day and model\n`);
   L.push(`"1h share" is the part of cache writes that used the 1-hour cache (the rest used the 5-minute cache, which expires during short pauses).\n`);
   L.push(table(['day', 'model', 'calls', 'tokens', 'cache writes', '1h share', 'output'], [...byDay.values()].sort((a, b) => a.d.localeCompare(b.d)).map(r => [r.d, r.model, fmt(r.n), mt(r.t), mt(r.w), (r.w1 + r.w5) ? pct(r.w1, r.w1 + r.w5) : '-', mt(r.o)])));
+  const byEntry = new Map(); for (const x of c.calls) { const k = day(x.ts) + '|' + x.entry; const r = byEntry.get(k) || { d: day(x.ts), e: x.entry, n: 0, w1: 0, w5: 0 }; r.n++; r.w1 += x.write1h; r.w5 += x.write5m; byEntry.set(k, r); }
+  if (byEntry.size > 1 || [...byEntry.values()].some(r => r.w5 > 0)) {
+    L.push(`### Cache lifetime by entrypoint\n\nInteractive sessions (\`cli\`) and \`claude -p\` / SDK runs (\`sdk-cli\`) can get different cache lifetimes. \`"promptCacheTtl": "1h"\` in settings.json has been reported to restore 1-hour writes.\n`);
+    L.push(table(['day', 'entrypoint', 'calls', '1h writes', '5m writes', '1h share'], [...byEntry.values()].sort((a, b) => (a.d + a.e).localeCompare(b.d + b.e)).map(r => [r.d, r.e, fmt(r.n), mt(r.w1), mt(r.w5), (r.w1 + r.w5) ? pct(r.w1, r.w1 + r.w5) : '-'])));
+  }
   const idle = c.calls.filter(x => x.idleRebuild);
   const idleW = idle.reduce((s, x) => s + x.cacheWrite, 0);
   const big = c.calls.filter(x => x.ctx >= 100000);

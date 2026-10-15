@@ -1,6 +1,6 @@
 // QuotaTrace core: analysis and report building, shared by the CLI and the browser app.
 // Pure JavaScript, no Node APIs. Inputs are file objects: { path, mtimeMs, lines() -> async iterable of strings }.
-export const VERSION = '0.7.0';
+export const VERSION = '0.7.1';
 let sinceMs = 0, untilMs = Infinity, TOP = 10, codexLabel = '~/.codex', claudeLabel = '~/.claude', meterText = '', claudeSnap = null;
 export function configure(o) {
   if (o.sinceMs != null) sinceMs = o.sinceMs;
@@ -351,13 +351,14 @@ export function claudeSection(c) {
     ['**Total**', `**${mt(T.t)}**`, '100%'],
   ]));
   const byDay = new Map();
-  for (const x of c.calls) { const k = day(x.ts) + '|' + x.model; const r = byDay.get(k) || { d: day(x.ts), model: x.model, n: 0, t: 0, w: 0, o: 0 }; r.n++; r.t += x.total; r.w += x.cacheWrite; r.o += x.output; byDay.set(k, r); }
+  for (const x of c.calls) { const k = day(x.ts) + '|' + x.model; const r = byDay.get(k) || { d: day(x.ts), model: x.model, n: 0, t: 0, w: 0, w1: 0, w5: 0, o: 0 }; r.n++; r.t += x.total; r.w += x.cacheWrite; r.w1 += x.write1h; r.w5 += x.write5m; r.o += x.output; byDay.set(k, r); }
   const daily = new Map(); for (const x of c.calls) { const d = day(x.ts); const r = daily.get(d) || { n: 0, t: 0, s: new Set() }; r.n++; r.t += x.total; r.s.add(x.session); daily.set(d, r); }
   const maxT = Math.max(...[...daily.values()].map(r => r.t));
   L.push(`### Daily activity\n`);
   L.push(table(['day', 'sessions', 'calls', 'tokens', ''], [...daily.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([d, r]) => [d, fmt(r.s.size), fmt(r.n), mt(r.t), '█'.repeat(Math.max(1, Math.round(20 * r.t / maxT)))])));
   L.push(`### Per day and model\n`);
-  L.push(table(['day', 'model', 'calls', 'tokens', 'cache writes', 'output'], [...byDay.values()].sort((a, b) => a.d.localeCompare(b.d)).map(r => [r.d, r.model, fmt(r.n), mt(r.t), mt(r.w), mt(r.o)])));
+  L.push(`"1h share" is the part of cache writes that used the 1-hour cache (the rest used the 5-minute cache, which expires during short pauses).\n`);
+  L.push(table(['day', 'model', 'calls', 'tokens', 'cache writes', '1h share', 'output'], [...byDay.values()].sort((a, b) => a.d.localeCompare(b.d)).map(r => [r.d, r.model, fmt(r.n), mt(r.t), mt(r.w), (r.w1 + r.w5) ? pct(r.w1, r.w1 + r.w5) : '-', mt(r.o)])));
   const idle = c.calls.filter(x => x.idleRebuild);
   const idleW = idle.reduce((s, x) => s + x.cacheWrite, 0);
   const big = c.calls.filter(x => x.ctx >= 100000);

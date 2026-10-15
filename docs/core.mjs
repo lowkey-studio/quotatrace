@@ -408,5 +408,5 @@ export function shareSummary(c, q, cl) {
 export function buildReport(c, q, cl) {
   const head = `# QuotaTrace report\n\nPeriod: ${sinceMs ? new Date(sinceMs).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : 'start of logs'} to ${untilMs === Infinity ? 'now' : new Date(untilMs).toISOString().slice(0, 16)} · generated ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC · quotatrace ${VERSION}\n\nCounts only. Session ids are one-way hashes; no prompts, paths, file names or outputs are included, so you can share this file.\n`;
   return [head, c ? codexSection(c, q) : '', cl ? claudeSection(cl) : '',
-    `---\nMade by QuotaTrace (https://quotatrace.appin60.com). Want a person to read this report, find the cause and draft your support ticket? See the site.\n`].join('\n');
+    `---\nMade by QuotaTrace (https://quotatrace.appin60.com).\n`].join('\n');
 }

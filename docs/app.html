@@ -44,9 +44,6 @@ input[type=file]{display:none}select{padding:8px;border-radius:6px;font-size:15p
 <button id="dl">Download report (.md)</button><button class="sec" id="cp">Copy report</button>
 </div>
 <div id="out"></div>
-<div id="cta" class="card cta" style="display:none">
-<b>Want a person to read this?</b> QuotaTrace Review ($19): email the downloaded report to quotatrace@appin60.com and get back the causes, ranked fixes for your setup and, if the numbers support it, a ready-to-send support ticket, within 6 hours. <a href="./#review">Details and checkout</a>.
-</div>
 <p class="small">The report holds counts only: session ids are one-way hashes, with no prompts, paths, file names or outputs. This page uses a cookie-free GoatCounter counter that records page views and the fact that an analysis ran, never anything from your logs (<a href="https://quotatrace.goatcounter.com/">public counter</a>). Open source: <a href="https://github.com/lowkey-studio/quotatrace">github.com/lowkey-studio/quotatrace</a>.</p>
 </main>
 <script type="module">
@@ -108,7 +105,7 @@ async function run(fileList) {
   const cl = claude.length ? await analyseClaude(mk(claude)) : null;
   lastReport = buildReport(c, q, cl);
   $('out').innerHTML = md2html(lastReport);
-  $('actions').style.display = 'flex'; $('cta').style.display = 'block';
+  $('actions').style.display = 'flex'; 
   $('status').textContent = `Done in ${((performance.now() - t0) / 1000).toFixed(1)} s. ${c ? c.calls.length + ' Codex calls' : ''}${c && cl ? ', ' : ''}${cl ? cl.calls.length + ' Claude Code calls' : ''}.`;
   try { window.goatcounter && window.goatcounter.count && window.goatcounter.count({ path: 'app-run', title: 'analysis run', event: true }); } catch {}
 }

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>QuotaTrace: where did my Codex / Claude Code quota go?</title>
-<meta name="description" content="Free local CLI that lines up your Codex quota percentage with the tokens behind it, finds out-of-line quota jumps, and shows what burned your tokens. Optional $19 human review.">
+<meta name="description" content="Free local CLI that lines up your Codex quota percentage with the tokens behind it, finds out-of-line quota jumps, and shows what burned your tokens. Runs on your machine or in your browser.">
 <style>
 :root{--fg:#111;--mut:#555;--bg:#fafaf7;--acc:#0b6e4f;--card:#fff;--bd:#e3e3dc}
 *{box-sizing:border-box}body{margin:0;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--fg);background:var(--bg)}
@@ -26,7 +26,7 @@ table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px
 <p><b>No terminal?</b> <a href="app.html">Run it in your browser</a>: pick your <code>.codex/sessions</code> or <code>.claude/projects</code> folder, and the analysis runs inside the page with nothing uploaded.</p>
 <p class="small">Node 18+, no dependencies, nothing uploaded. Writes <code>quotatrace-report.md</code> with counts only (hashed session ids, no prompts, paths or file names), so you can attach it to an issue or a support ticket. Source: <a href="https://github.com/lowkey-studio/quotatrace">github.com/lowkey-studio/quotatrace</a></p>
 
-<p class="small"><b>Can you trust it with your logs?</b> The CLI makes no network requests (no fetch/http/net imports: <a href="https://github.com/lowkey-studio/quotatrace#trust-and-privacy">check it</a>), is ~600 readable lines with zero dependencies, and is read-only. The browser version keeps working after you disconnect.</p>
+<p class="small"><b>Can you trust it with your logs?</b> The CLI makes no network requests (no fetch/http/net imports: <a href="https://github.com/lowkey-studio/quotatrace#trust-and-privacy">check it</a>), is under 800 readable lines with zero dependencies, and is read-only. The browser version keeps working after you disconnect.</p>
 <p><b>Live speedometer:</b> <code>npx github:lowkey-studio/quotatrace live</code> shows tokens per minute and cache hit rate per running session, quota points per hour, and time until each window is empty.</p>
 <h2>What the report shows</h2>
 <div class="card">
@@ -48,11 +48,6 @@ table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px
 <ul class="small"><li>Waiting and polling: 40 calls (22.2%) followed a sleep / wait poll, costing 4.77M tokens (28.6%).</li>
 <li>One 60,000-token command output was re-sent 109 times: 6.54M input tokens.</li></ul>
 <p class="small"><a href="https://github.com/lowkey-studio/quotatrace/blob/main/test/sample-report.md">Full sample report</a></p>
-</div>
-
-<h2 id="review">QuotaTrace Review (closed)</h2>
-<div class="card">
-<p>The paid review was available until 2026-10-15 09:55 UTC and is closed now. The free tool (CLI and <a href="app.html">browser version</a>) keeps working. <a href="sample-review.html">Sample of what a review contained</a>.</p>
 </div>
 
 <h2>Contribute to the public quota dataset</h2>

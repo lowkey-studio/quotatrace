@@ -45,7 +45,7 @@ Per running session: tokens per minute, calls, current context size and the last
 You shouldn't have to take a stranger's word for what a tool does with your logs, so it's built to be checked:
 
 - **No network access.** `bin/quotatrace.mjs` and `bin/core.mjs` import only `fs`, `path`, `os` and `readline` (and `bin/live.mjs` the same minus `readline`); there is no `fetch`, `http`, `net` or `child_process` in them. Check with `grep -nE "^import|fetch\(" bin/quotatrace.mjs bin/core.mjs` (the only URLs in the code are links printed in the report). (`bin/meter.mjs` uses `child_process` only to run *your own* previous status line command.)
-- **Small and readable.** About 600 lines of plain JavaScript, no dependencies, nothing minified. Read it before you run it, or pin a commit: `npx github:lowkey-studio/quotatrace#<commit>`.
+- **Small and readable.** Under 800 lines of plain JavaScript, no dependencies, nothing minified. Read it before you run it, or pin a commit: `npx github:lowkey-studio/quotatrace#<commit>`.
 - **Read-only.** It reads `.jsonl` logs and writes one report file. Only `meter install` changes anything (your Claude `settings.json`, backed up first).
 - **The browser version** reads the folder you pick inside the page. Load it, disconnect from the network, and it still works.
 - **The report holds counts only**, so check it before sharing: no prompts, paths, file names or outputs.
@@ -87,9 +87,5 @@ For each Codex rate-limit window (5-hour, weekly), QuotaTrace takes the quota po
 ## Contribute your numbers
 
 `quotatrace --share` opens a prefilled issue with per-window aggregates only (date, window, plan, points used, thousands of tokens). With enough of them we can show, per plan and model, what a quota point buys and when that changed.
-
-## Want a person to read your report?
-
-The paid review is closed for now.
 
 Built by Low Key Studio. MIT licence.

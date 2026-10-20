@@ -1,51 +1,121 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-brand="quotatrace">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>QuotaTrace in your browser: where did my Codex / Claude Code quota go?</title>
 <meta name="description" content="Pick your .codex/sessions or .claude/projects folder. QuotaTrace analyses it inside your browser, nothing is uploaded, and shows quota points per 1M tokens, out-of-line quota jumps and where your tokens went.">
-<style>
-:root{--fg:#111;--mut:#555;--bg:#fafaf7;--acc:#0b6e4f;--card:#fff;--bd:#e3e3dc}
-*{box-sizing:border-box}body{margin:0;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--fg);background:var(--bg)}
-main{max-width:980px;margin:0 auto;padding:36px 20px 80px}h1{font-size:1.9rem;line-height:1.2;margin:.2em 0}
-code,pre{font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}code{background:#eee;padding:1px 4px;border-radius:4px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px 20px;margin:16px 0}
-.row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
-label.btn,button{display:inline-block;background:var(--acc);color:#fff;border:0;padding:11px 18px;border-radius:8px;font-weight:600;cursor:pointer;font-size:15px}
-button.sec{background:#fff;color:var(--acc);border:1px solid var(--acc)}
-input[type=file]{display:none}select{padding:8px;border-radius:6px;font-size:15px}
-#out table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0 16px}#out td,#out th{border-bottom:1px solid var(--bd);padding:5px 7px;text-align:left}
-#out h1{font-size:1.5rem}#out h2{margin-top:1.6em;border-top:2px solid var(--bd);padding-top:.6em}#out h3{margin-top:1.3em}
-.small{font-size:.9rem;color:var(--mut)}#status{color:var(--mut)}a{color:var(--acc)}
-.cta{background:#eef7f2;border-color:#bfe0cf}
-</style>
+<script>try{var t=localStorage.getItem('kit-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="preload" href="/kit/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/kit/kit.css">
+<link rel="stylesheet" href="/kit/site.css">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="QuotaTrace in your browser">
+<meta property="og:description" content="Line up your Codex quota percentage with the tokens behind it and see what burned them. Free, open source, runs locally.">
+<meta property="og:url" content="https://quotatrace.appin60.com/app.html">
+<meta property="og:image" content="https://quotatrace.appin60.com/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#F7F6F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121211" media="(prefers-color-scheme: dark)">
+<script src="/kit/kit.js" defer></script>
 <script data-goatcounter="https://quotatrace.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
-<body><main>
-<p class="small"><a href="./">QuotaTrace</a> · runs entirely in your browser</p>
-<h1>Where did my quota go? Analyse your logs in the browser</h1>
-<p>Pick the folder Codex or Claude Code keeps its logs in. The files are read <b>inside this page</b>; nothing is uploaded (you can turn off your network after the page loads and it still works). Prefer a terminal? <code>npx github:lowkey-studio/quotatrace</code></p>
+<body>
+<a class="skip" href="#main">Skip to content</a>
 
-<div class="card">
-<p style="margin-top:0"><b>Codex:</b> the <code>sessions</code> folder inside <code>.codex</code> in your home folder: <code>~/.codex/sessions</code> on Mac/Linux, <code>C:\Users\&lt;you&gt;\.codex\sessions</code> on Windows.<br>
-<b>Claude Code:</b> the <code>projects</code> folder inside <code>.claude</code> (<code>~/.claude/projects</code>).<br>
-<span class="small">Hidden folders: on Mac press <b>Cmd+Shift+.</b> in the picker; on Windows type the path into the picker's address bar.</span></p>
-<div class="row">
-<label class="btn">Pick a logs folder<input id="dir" type="file" webkitdirectory directory multiple></label>
-<label class="btn" style="background:#3c5a4c">…or pick .jsonl files<input id="files" type="file" accept=".jsonl" multiple></label>
-<span>Period <select id="since"><option value="7">last 7 days</option><option value="14">last 14 days</option><option value="30" selected>last 30 days</option><option value="90">last 90 days</option><option value="0">everything</option></select></span>
-<label class="small" style="cursor:pointer"><u>optional: Claude meter file</u><input id="meter" type="file" accept=".jsonl"></label>
-</div>
-<p id="status"></p>
-</div>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="QuotaTrace home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" style="fill:var(--accent,#7C49C9)"/><g fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--on-accent,#FFFFFF)"><path d="M8.5 21a7.5 7.5 0 1 1 15 0"/><path d="M16 21l4-4.6"/><circle cx="16" cy="21" r=".6"/></g></svg>
+      <span>Quota<b>Trace</b></span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="/app.html" aria-current="page">Browser version</a>
+      <a href="/#report">What it shows</a>
+      <a href="/#dataset">Dataset</a>
+      <a href="/#caveats">Caveats</a>
+    </nav>
+    <button class="icon-btn theme-toggle" type="button" data-theme-toggle aria-label="Switch theme">
+      <span class="swap">
+        <svg class="icon i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+        <svg class="icon i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-17.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </span>
+    </button>
+  </div>
+</header>
 
-<div id="actions" class="row" style="display:none">
-<button id="dl">Download report (.md)</button><button class="sec" id="cp">Copy report</button>
-</div>
-<div id="out"></div>
-<p class="small">The report holds counts only: session ids are one-way hashes, with no prompts, paths, file names or outputs. This page uses a cookie-free GoatCounter counter that records page views and the fact that an analysis ran, never anything from your logs (<a href="https://quotatrace.goatcounter.com/">public counter</a>). Open source: <a href="https://github.com/lowkey-studio/quotatrace">github.com/lowkey-studio/quotatrace</a>.</p>
+<main id="main">
+  <section class="hero">
+    <div class="wrap">
+      <h1>Where did my quota go? Analyse your logs in the browser</h1>
+      <p class="lead">Pick the folder Codex or Claude Code keeps its logs in. The files are read inside this page and nothing is uploaded: you can turn off your network after the page loads and it still works.</p>
+      <div class="hero-meta">
+        <span class="free"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Free</span>
+        <span>No signup</span>
+        <span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Runs entirely in your browser</span>
+      </div>
+
+      <div class="panel" id="analyse">
+        <div class="panel-head">
+          <h2>Analyse your logs</h2>
+          <span class="meta"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>Nothing leaves this page</span>
+        </div>
+        <div class="panel-body">
+          <dl class="kv where">
+            <dt>Codex</dt><dd>the <code>sessions</code> folder inside <code>.codex</code> in your home folder: <code>~/.codex/sessions</code> on Mac and Linux, <code>C:\Users\&lt;you&gt;\.codex\sessions</code> on Windows.</dd>
+            <dt>Claude Code</dt><dd>the <code>projects</code> folder inside <code>.claude</code> (<code>~/.claude/projects</code>).</dd>
+          </dl>
+          <p class="form-note">Hidden folders: on Mac press <kbd>Cmd+Shift+.</kbd> in the picker; on Windows type the path into the picker's address bar.</p>
+          <div class="form-row pick-row">
+            <label class="btn picker">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>Pick a logs folder<input id="dir" type="file" webkitdirectory directory multiple></label>
+            <label class="btn btn-secondary picker">Or pick .jsonl files<input id="files" type="file" accept=".jsonl" multiple></label>
+            <div class="field">
+              <label class="label" for="since">Period</label>
+              <select class="select" id="since"><option value="7">last 7 days</option><option value="14">last 14 days</option><option value="30" selected>last 30 days</option><option value="90">last 90 days</option><option value="0">everything</option></select>
+            </div>
+            <label class="btn btn-ghost btn-sm picker">Optional: Claude meter file<input id="meter" type="file" accept=".jsonl"></label>
+          </div>
+          <p id="status" class="status" aria-live="polite"></p>
+        </div>
+        <div class="result report-result">
+          <div id="actions" class="actions report-actions" style="display:none">
+            <button class="btn btn-secondary btn-sm" type="button" id="dl"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>Download report (.md)</button><button class="btn btn-ghost btn-sm" type="button" id="cp">Copy report</button>
+          </div>
+          <div id="out" class="report"></div>
+        </div>
+      </div>
+      <p class="hint after-panel">Prefer a terminal? <code>npx github:lowkey-studio/quotatrace</code>. Want to see the output first? Read <a href="https://github.com/lowkey-studio/quotatrace/blob/main/test/sample-report.md">a sample report</a> made from synthetic logs.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="callout">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <div><p>The report holds counts only: session ids are one-way hashes, with no prompts, paths, file names or outputs. This page uses a cookie-free GoatCounter counter that records page views and the fact that an analysis ran, never anything from your logs (<a href="https://quotatrace.goatcounter.com/">public counter</a>). Open source: <a href="https://github.com/lowkey-studio/quotatrace">github.com/lowkey-studio/quotatrace</a>.</p></div>
+      </div>
+    </div>
+  </section>
 </main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-row">
+      <span class="footer-brand"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" style="fill:var(--accent,#7C49C9)"/><g fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--on-accent,#FFFFFF)"><path d="M8.5 21a7.5 7.5 0 1 1 15 0"/><path d="M16 21l4-4.6"/><circle cx="16" cy="21" r=".6"/></g></svg>QuotaTrace</span>
+      <span>Open source. Not affiliated with OpenAI or Anthropic.</span>
+      <a href="mailto:quotatrace@appin60.com">quotatrace@appin60.com</a>
+      <a href="https://quotatrace.goatcounter.com/">Public visit counter</a>
+      <a href="https://github.com/lowkey-studio/quotatrace">Source on GitHub</a>
+    </div>
+    <!-- umbrella:start. Swap this block only, identically on every site. See design-kit/APPLYING.md. -->
+    <p class="umbrella">One of a family of tools from <a href="https://lfglabs.ai">LFG Labs</a></p>
+    <!-- umbrella:end -->
+  </div>
+</footer>
 <script type="module">
 import { configure, analyseCodex, quotaAnalysis, analyseClaude, buildReport } from './core.mjs';
 const $ = id => document.getElementById(id);
@@ -73,13 +143,13 @@ function md2html(md) {
     if (l.startsWith('|')) {
       const rows = []; while (i < lines.length && lines[i].startsWith('|')) rows.push(lines[i++]);
       const cells = r => r.slice(1, -1).split(' | ').map(x => x.trim());
-      let h = '<table><tr>' + cells(rows[0]).map(c => `<th>${inline(c)}</th>`).join('') + '</tr>';
+      let h = '<div class="table-wrap"><table class="table"><thead><tr>' + cells(rows[0]).map(c => `<th scope="col">${inline(c)}</th>`).join('') + '</tr></thead><tbody>';
       for (const r of rows.slice(2)) h += '<tr>' + cells(r).map(c => `<td>${inline(c)}</td>`).join('') + '</tr>';
-      out.push(h + '</table>'); continue;
+      out.push(h + '</tbody></table></div>'); continue;
     }
     if (l.startsWith('- ')) { const items = []; while (i < lines.length && lines[i].startsWith('- ')) items.push(lines[i++].slice(2)); out.push('<ul>' + items.map(x => `<li>${inline(x)}</li>`).join('') + '</ul>'); continue; }
     const m = /^(#{1,3}) (.*)/.exec(l);
-    if (m) out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`);
+    if (m) out.push(`<h${m[1].length + 1}>${inline(m[2])}</h${m[1].length + 1}>`); // one level down: the page keeps its own h1
     else if (l === '---') out.push('<hr>');
     else if (l.trim()) out.push(`<p>${inline(l)}</p>`);
     i++;
@@ -105,6 +175,7 @@ async function run(fileList) {
   const cl = claude.length ? await analyseClaude(mk(claude)) : null;
   lastReport = buildReport(c, q, cl);
   $('out').innerHTML = md2html(lastReport);
+  if (window.kit) window.kit.refresh();
   $('actions').style.display = 'flex'; 
   $('status').textContent = `Done in ${((performance.now() - t0) / 1000).toFixed(1)} s. ${c ? c.calls.length + ' Codex calls' : ''}${c && cl ? ', ' : ''}${cl ? cl.calls.length + ' Claude Code calls' : ''}.`;
   try { window.goatcounter && window.goatcounter.count && window.goatcounter.count({ path: 'app-run', title: 'analysis run', event: true }); } catch {}
@@ -116,4 +187,5 @@ $('meter').onchange = async e => { meterText = e.target.files[0] ? await e.targe
 $('dl').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([lastReport], { type: 'text/markdown' })); a.download = 'quotatrace-report.md'; a.click(); };
 $('cp').onclick = async () => { await navigator.clipboard.writeText(lastReport); $('cp').textContent = 'Copied'; setTimeout(() => $('cp').textContent = 'Copy report', 1500); };
 </script>
-</body></html>
+</body>
+</html>

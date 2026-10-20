@@ -1,59 +1,195 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-brand="quotatrace">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>QuotaTrace: where did my Codex / Claude Code quota go?</title>
 <meta name="description" content="Free local CLI that lines up your Codex quota percentage with the tokens behind it, finds out-of-line quota jumps, and shows what burned your tokens. Runs on your machine or in your browser.">
-<style>
-:root{--fg:#111;--mut:#555;--bg:#fafaf7;--acc:#0b6e4f;--card:#fff;--bd:#e3e3dc}
-*{box-sizing:border-box}body{margin:0;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--fg);background:var(--bg)}
-main{max-width:860px;margin:0 auto;padding:40px 20px 80px}h1{font-size:2.1rem;line-height:1.2;margin:.2em 0}h2{margin-top:2.2em}
-.lead{font-size:1.15rem;color:var(--mut)}code,pre{font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
-pre{background:#111;color:#e8e8e3;padding:14px 16px;border-radius:8px;overflow:auto}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:20px 22px;margin:18px 0}
-table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px solid var(--bd);padding:6px 8px;text-align:left}
-.btn{display:inline-block;background:var(--acc);color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600}
-.small{font-size:.9rem;color:var(--mut)}ul{padding-left:1.2em}a{color:var(--acc)}
-</style>
+<script>try{var t=localStorage.getItem('kit-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="preload" href="/kit/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/kit/kit.css">
+<link rel="stylesheet" href="/kit/site.css">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="QuotaTrace: where did my Codex / Claude Code quota go?">
+<meta property="og:description" content="Line up your Codex quota percentage with the tokens behind it and see what burned them. Free, open source, runs locally.">
+<meta property="og:url" content="https://quotatrace.appin60.com/">
+<meta property="og:image" content="https://quotatrace.appin60.com/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#F7F6F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121211" media="(prefers-color-scheme: dark)">
+<script src="/kit/kit.js" defer></script>
 <script data-goatcounter="https://quotatrace.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
-<body><main>
-<p class="small"><a href="https://lfglabs.ai">LFG Labs</a> · open source · runs locally</p>
-<h1>Where did my Codex / Claude Code quota go?</h1>
-<p class="lead">QuotaTrace reads the session logs already on your machine and lines up your plan's quota percentage with the tokens behind every call. You see which quota jumps were out of line with your work, and what actually burned your tokens.</p>
-<pre>npx github:lowkey-studio/quotatrace --since 30d</pre>
-<p><b>No terminal?</b> <a href="app.html">Run it in your browser</a>: pick your <code>.codex/sessions</code> or <code>.claude/projects</code> folder, and the analysis runs inside the page with nothing uploaded.</p>
-<p class="small">Node 18+, no dependencies, nothing uploaded. Writes <code>quotatrace-report.md</code> with counts only (hashed session ids, no prompts, paths or file names), so you can attach it to an issue or a support ticket. Source: <a href="https://github.com/lowkey-studio/quotatrace">github.com/lowkey-studio/quotatrace</a></p>
+<body>
+<a class="skip" href="#main">Skip to content</a>
 
-<p class="small"><b>Can you trust it with your logs?</b> The CLI makes no network requests (no fetch/http/net imports: <a href="https://github.com/lowkey-studio/quotatrace#trust-and-privacy">check it</a>), is under 800 readable lines with zero dependencies, and is read-only. The browser version keeps working after you disconnect.</p>
-<p><b>Live speedometer:</b> <code>npx github:lowkey-studio/quotatrace live</code> shows tokens per minute and cache hit rate per running session, quota points per hour, and time until each window is empty.</p>
-<h2>What the report shows</h2>
-<div class="card">
-<ul>
-<li><b>Quota points per million tokens, per window.</b> Codex logs <code>used_percent</code> with each call. Comparable work should cost comparable points per million tokens; a sudden multiple on the same plan and model points to metering, not you.</li>
-<li><b>Quota jumps out of line with the tokens behind them</b>, with UTC timestamps. Jumps with zero local calls point to another device, a cloud task or background use.</li>
-<li><b>Where the tokens went:</b> context replay, big-context calls that produced almost nothing, sleep/wait polling, and the tool outputs that were re-sent on every later call (size × times re-sent).</li>
-<li><b>Claude Code:</b> cache writes vs reads, cache rebuilt after a pause, subagent share, and the tool results that were re-read the most. Claude Code keeps your plan's usage percentage out of its transcripts, so <code>quotatrace meter install</code> adds a status line hook that records it (your existing status line keeps working). After that you get quota points per 1M tokens for Claude Code too.</li>
-</ul>
-</div>
-<p>Example rows from the sample report (synthetic logs):</p>
-<div class="card">
-<table><tr><th>window</th><th>plan</th><th>quota used</th><th>tokens</th><th>% per 1M tokens</th></tr>
-<tr><td>weekly</td><td>pro</td><td>12% → 27%</td><td>16.69M</td><td>0.90</td></tr></table>
-<p style="margin:.8em 0 .3em"><b>Quota jumps out of line</b></p>
-<table><tr><th>time (UTC)</th><th>jump</th><th>tokens since last step</th><th>expected</th></tr>
-<tr><td>2026-10-10 15:20</td><td>+9%</td><td>123,300</td><td>+0.1%</td></tr></table>
-<p style="margin:.8em 0 .3em"><b>Where the tokens went</b></p>
-<ul class="small"><li>Waiting and polling: 40 calls (22.2%) followed a sleep / wait poll, costing 4.77M tokens (28.6%).</li>
-<li>One 60,000-token command output was re-sent 109 times: 6.54M input tokens.</li></ul>
-<p class="small"><a href="https://github.com/lowkey-studio/quotatrace/blob/main/test/sample-report.md">Full sample report</a></p>
-</div>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="QuotaTrace home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" style="fill:var(--accent,#7C49C9)"/><g fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--on-accent,#FFFFFF)"><path d="M8.5 21a7.5 7.5 0 1 1 15 0"/><path d="M16 21l4-4.6"/><circle cx="16" cy="21" r=".6"/></g></svg>
+      <span>Quota<b>Trace</b></span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="/app.html">Browser version</a>
+      <a href="#report">What it shows</a>
+      <a href="#dataset">Dataset</a>
+      <a href="#caveats">Caveats</a>
+    </nav>
+    <button class="icon-btn theme-toggle" type="button" data-theme-toggle aria-label="Switch theme">
+      <span class="swap">
+        <svg class="icon i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+        <svg class="icon i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-17.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </span>
+    </button>
+  </div>
+</header>
 
-<h2>Contribute to the public quota dataset</h2>
-<p><code>npx github:lowkey-studio/quotatrace --share</code> prints a link to a prefilled GitHub issue holding only per-window aggregates (date, window, plan, points used, thousands of tokens). You review it before posting. Pooled, these show what a quota point buys per plan and model, and when that changed. <a href="https://github.com/lowkey-studio/quotatrace/issues?q=label%3Adata">See submissions</a>.</p>
+<main id="main">
+  <section class="hero">
+    <div class="wrap">
+      <h1>Where did my Codex / Claude Code quota go?</h1>
+      <p class="lead">QuotaTrace reads the session logs already on your machine and lines up your plan's quota percentage with the tokens behind every call. You see which quota jumps were out of line with your work, and what actually burned your tokens.</p>
+      <div class="hero-meta">
+        <span class="free"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Free</span>
+        <span>Open source</span>
+        <span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Runs locally, nothing uploaded</span>
+      </div>
 
-<h2>Caveats</h2>
-<p class="small">Only calls logged on the machine you run it on are counted. Codex reports quota in whole points, so short windows are noisy. Tool-output sizes are estimated at 4 characters per token. Claude Code does not log your plan's usage percentage, so its section reports tokens. QuotaTrace is not affiliated with OpenAI or Anthropic.</p>
-<p class="small">Contact: quotatrace@appin60.com · <a href="https://quotatrace.goatcounter.com/">public visit counter</a></p>
-</main></body></html>
+      <div class="panel" id="run">
+        <div class="panel-head">
+          <h2>Run it</h2>
+          <span class="meta"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19h8"/><path d="m4 17 6-6-6-6"/></svg>Node 18+, no dependencies</span>
+        </div>
+        <div class="panel-body">
+          <div class="code code-wrap">
+            <div class="code-head"><span>In a terminal</span>
+              <button class="copy" type="button" data-copy=""><span class="swap"><svg class="icon i-copy" viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="icon i-done" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span class="lbl"><span>Copy</span><span>Copied</span></span></button>
+            </div>
+<pre><code><span class="c-prompt">$ </span>npx github:lowkey-studio/quotatrace --since 30d</code></pre>
+          </div>
+          <div class="actions">
+            <a class="btn" href="/app.html">Run it in your browser
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </a>
+            <span class="hint">No terminal? Pick your <code>.codex/sessions</code> or <code>.claude/projects</code> folder and the analysis runs inside the page.</span>
+          </div>
+          <p class="form-note">Writes <code>quotatrace-report.md</code> with counts only (hashed session ids, no prompts, paths or file names), so you can attach it to an issue or a support ticket.</p>
+        </div>
+
+        <div class="result" aria-label="Example report">
+          <div class="result-head">
+            <div class="verdict">Quota used vs tokens, weekly window</div>
+            <span class="tag">Example result, synthetic logs</span>
+          </div>
+          <div class="stats">
+            <div class="stat"><b>12% → 27%</b><span>quota used, pro plan</span></div>
+            <div class="stat"><b>16.69M</b><span>tokens behind it</span></div>
+            <div class="stat"><b>0.90</b><span>% per 1M tokens</span></div>
+            <div class="stat"><b>+9%</b><span>one jump with 123,300 tokens behind it</span></div>
+          </div>
+          <div class="table-wrap table-stack">
+            <table class="table">
+              <caption class="sr-only">Quota jumps out of line</caption>
+              <thead><tr><th scope="col">Time (UTC)</th><th scope="col">Quota jump</th><th scope="col" class="num">Tokens since last step</th><th scope="col">Expected</th></tr></thead>
+              <tbody>
+                <tr><td data-label="Time (UTC)" class="mono">2026-10-10 15:20</td><td data-label="Quota jump"><span class="tag tag-bad">+9%</span></td><td data-label="Tokens since last step" class="num">123,300</td><td data-label="Expected">+0.1%</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <ul class="example-notes">
+            <li>Waiting and polling: 40 calls (22.2%) followed a sleep / wait poll, costing 4.77M tokens (28.6%).</li>
+            <li>One 60,000-token command output was re-sent 109 times: 6.54M input tokens.</li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-ghost btn-sm" href="https://github.com/lowkey-studio/quotatrace/blob/main/test/sample-report.md"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/></svg>Full sample report</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="report">
+    <div class="wrap">
+      <div class="section-head"><h2>What the report shows</h2></div>
+      <div class="ruled">
+        <div><h3>Quota points per million tokens, per window</h3><p>Codex logs <code>used_percent</code> with each call. Comparable work should cost comparable points per million tokens; a sudden multiple on the same plan and model points to metering, not you.</p></div>
+        <div><h3>Quota jumps out of line with the tokens behind them</h3><p>With UTC timestamps. Jumps with zero local calls point to another device, a cloud task or background use.</p></div>
+        <div><h3>Where the tokens went</h3><p>Context replay, big-context calls that produced almost nothing, sleep and wait polling, and the tool outputs that were re-sent on every later call (size × times re-sent).</p></div>
+        <div><h3>Claude Code</h3><p>Cache writes vs reads, cache rebuilt after a pause, subagent share, and the tool results that were re-read the most.</p></div>
+      </div>
+      <div class="callout">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <div><p>Claude Code keeps your plan's usage percentage out of its transcripts, so <code>quotatrace meter install</code> adds a status line hook that records it (your existing status line keeps working). After that you get quota points per 1M tokens for Claude Code too.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="live">
+    <div class="wrap split">
+      <div class="section-head"><h2>Live speedometer</h2><p>Tokens per minute and cache hit rate per running session, quota points per hour, and time until each window is empty.</p></div>
+      <div class="code code-wrap">
+        <div class="code-head"><span>In a terminal</span>
+          <button class="copy" type="button" data-copy=""><span class="swap"><svg class="icon i-copy" viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="icon i-done" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span class="lbl"><span>Copy</span><span>Copied</span></span></button>
+        </div>
+<pre><code><span class="c-prompt">$ </span>npx github:lowkey-studio/quotatrace live</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="trust">
+    <div class="wrap split">
+      <div class="section-head"><h2>Can you trust it with your logs?</h2></div>
+      <div class="ruled ruled-1">
+        <div><h3>No network requests</h3><p>The CLI has no fetch, http or net imports: <a href="https://github.com/lowkey-studio/quotatrace#trust-and-privacy">check it</a>. The browser version keeps working after you disconnect.</p></div>
+        <div><h3>Small and read-only</h3><p>Under 800 readable lines with zero dependencies. It only reads your logs and writes one report. Source: <a href="https://github.com/lowkey-studio/quotatrace">github.com/lowkey-studio/quotatrace</a></p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="dataset">
+    <div class="wrap split">
+      <div class="section-head"><h2>Contribute to the public quota dataset</h2><p><a href="https://github.com/lowkey-studio/quotatrace/issues?q=label%3Adata">See submissions</a></p></div>
+      <div class="stack">
+        <p class="measure">This prints a link to a prefilled GitHub issue holding only per-window aggregates (date, window, plan, points used, thousands of tokens). You review it before posting. Pooled, these show what a quota point buys per plan and model, and when that changed.</p>
+        <div class="code code-wrap">
+          <div class="code-head"><span>In a terminal</span>
+            <button class="copy" type="button" data-copy=""><span class="swap"><svg class="icon i-copy" viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="icon i-done" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span class="lbl"><span>Copy</span><span>Copied</span></span></button>
+          </div>
+<pre><code><span class="c-prompt">$ </span>npx github:lowkey-studio/quotatrace --share</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="caveats">
+    <div class="wrap split">
+      <div class="section-head"><h2>Caveats</h2></div>
+      <ul class="ruled ruled-1 plain">
+        <li>Only calls logged on the machine you run it on are counted.</li>
+        <li>Codex reports quota in whole points, so short windows are noisy.</li>
+        <li>Tool-output sizes are estimated at 4 characters per token.</li>
+        <li>Claude Code does not log your plan's usage percentage, so its section reports tokens.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-row">
+      <span class="footer-brand"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" style="fill:var(--accent,#7C49C9)"/><g fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--on-accent,#FFFFFF)"><path d="M8.5 21a7.5 7.5 0 1 1 15 0"/><path d="M16 21l4-4.6"/><circle cx="16" cy="21" r=".6"/></g></svg>QuotaTrace</span>
+      <span>Open source. Not affiliated with OpenAI or Anthropic.</span>
+      <a href="mailto:quotatrace@appin60.com">quotatrace@appin60.com</a>
+      <a href="https://quotatrace.goatcounter.com/">Public visit counter</a>
+      <a href="https://github.com/lowkey-studio/quotatrace">Source on GitHub</a>
+    </div>
+    <!-- umbrella:start. Swap this block only, identically on every site. See design-kit/APPLYING.md. -->
+    <p class="umbrella">One of a family of tools from <a href="https://lfglabs.ai">LFG Labs</a></p>
+    <!-- umbrella:end -->
+  </div>
+</footer>
+</body>
+</html>

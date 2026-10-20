@@ -88,4 +88,4 @@ For each Codex rate-limit window (5-hour, weekly), QuotaTrace takes the quota po
 
 `quotatrace --share` opens a prefilled issue with per-window aggregates only (date, window, plan, points used, thousands of tokens). With enough of them we can show, per plan and model, what a quota point buys and when that changed.
 
-Built by Low Key Studio. MIT licence.
+Built by LFG Labs. MIT licence.
